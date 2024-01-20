@@ -1,4 +1,3 @@
-#include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include "clist.h"
@@ -16,7 +15,7 @@ struct list_t {
 };
 
 
-static bool isEmpty(const list_t* list) {
+bool is_list_empty(const list_t* list) {
     return ((list->head == NULL) && (list->tail == NULL));
 }
 
@@ -30,7 +29,7 @@ list_t* create_list(void) {
 }
 
 void delete_list(list_t* list) {
-    while (!isEmpty(list)) {
+    while (!is_list_empty(list)) {
         list_pop_back(list);
     }
     free(list);
@@ -70,7 +69,7 @@ void list_pop_front(list_t* list) {
     } else {
         // last element
         list->tail = NULL;
-    } 
+    }
     free(node);
 }
 
@@ -88,7 +87,7 @@ void list_pop_back(list_t* list) {
 }
 
 page_t* list_front(const list_t* list) {
-    if (!isEmpty(list)) {
+    if (!is_list_empty(list)) {
         return list->head->page;
     } else {
         return NULL;
@@ -96,7 +95,7 @@ page_t* list_front(const list_t* list) {
 }
 
 page_t* list_back(const list_t* list) {
-    if (!isEmpty(list)) {
+    if (!is_list_empty(list)) {
         return list->tail->page;
     } else {
         return NULL;
@@ -104,7 +103,7 @@ page_t* list_back(const list_t* list) {
 }
 
 size_t list_length(const list_t* list) {
-    if (isEmpty(list)) { return 0; }
+    if (is_list_empty(list)) { return 0; }
     size_t count = 1;
     list_node_t* next = list->head->next;
     while (next != NULL) {
@@ -117,7 +116,7 @@ size_t list_length(const list_t* list) {
 void list_print(const list_t* list) {
     printf("List %p\n", list);
     printf("Head: %p, tail: %p\n", list->head, list->tail);
-    if (isEmpty(list)) {
+    if (is_list_empty(list)) {
         puts("Empty list");
     }
     list_node_t* node = list->head;

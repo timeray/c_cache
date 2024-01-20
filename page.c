@@ -12,6 +12,12 @@ page_t* create_page(const char* arr) {
 }
 
 
+page_t* copy_page(const page_t* page) {
+    page_t* new_page = create_page(page->data);
+    return new_page;
+}
+
+
 void delete_page(page_t* page) {
     free(page->data);
     free(page);

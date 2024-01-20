@@ -1,5 +1,6 @@
 #pragma once
 
+#include <stdbool.h>
 #include "page.h"
 
 // Doubly linked list
@@ -19,4 +20,5 @@ page_t* list_front(const list_t*);
 page_t* list_back(const list_t*);
 
 size_t list_length(const list_t*);
+bool is_list_empty(const list_t*);
 void list_print(const list_t*);
