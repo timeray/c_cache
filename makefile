@@ -2,7 +2,7 @@ CC=gcc
 INCDIRS=-I.
 LIBDIRS=-L/ucrt64/lib
 LIBINC=-lcheck
-OPT=-O0
+OPT=-O2
 CFLAGS=-Wall $(INCDIRS) $(LIBDIRS) $(OPT)
 
 CFILES=page.c clist.c tests/test.c
