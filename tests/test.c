@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include "../page.h"
 #include "../clist.h"
+#include "../chashtable.h"
 
 
 START_TEST(test_page)
@@ -28,6 +29,20 @@ START_TEST(test_page)
         delete_page(page_copy);
     }
 }
+END_TEST
+
+
+START_TEST(test_key)
+{
+    key_t key1 = {"Hello, key"};
+    key_t key2 = key1;
+    key_t key3 = {"Hello, keyw"};
+    ck_assert_int_eq(key_hash(&key1), 1);
+    ck_assert_str_eq(key1, "Hello, key");
+    ck_assert(key_equal(&key1, &key2));
+    ck_assert(!key_equal(&key1, &key3));
+}
+END_TEST
 
 
 START_TEST(test_list_create)
@@ -122,12 +137,17 @@ START_TEST(test_list_push_pop_randomized)
         pages[i] = create_page(buf);
     }
 
+    size_t count_pushes = 0;
+    size_t count_pops = 0;
+
     for (size_t i = 0; i < 1000000; ++i) {
         int rand_num = rand() % 100;
         if (rand_num < 25) {
             list_push_front(list, pages[rand()]);
+            ++count_pushes;
         } else if (rand_num < 60) {
             list_push_back(list, pages[rand()]);
+            ++count_pushes;
         } else if (rand_num < 70) {
             page_t* head = list_front(list);
             if (!is_list_empty(list)) {
@@ -143,13 +163,16 @@ START_TEST(test_list_push_pop_randomized)
         } else if (rand_num < 90) {
             if (!is_list_empty(list)) {
                 list_pop_front(list);
+                ++count_pops;
             }
         } else {
             if (!is_list_empty(list)) {
                 list_pop_back(list);
+                ++count_pops;
             }
         }
     }
+    ck_assert(list_length(list) == (count_pushes > count_pops ? count_pushes - count_pops : 0));
     while (!is_list_empty(list)) {
         list_pop_back(list);
     }
@@ -160,6 +183,107 @@ START_TEST(test_list_push_pop_randomized)
     free(pages);
     delete_list(list);
 }
+END_TEST
+
+
+START_TEST(test_hashtable_create)
+{
+    {
+        hashtable_t* htable = create_hashtable();
+        delete_hashtable(htable);
+    }
+    {
+        hashtable_t* htable = create_hashtable();
+        ck_assert(hashtable_is_empty(htable));
+        ck_assert_uint_eq(hashtable_length(htable), 0);
+        delete_hashtable(htable);
+    }
+}
+END_TEST
+
+
+START_TEST(test_hashtable_put_get_delete)
+{
+    hashtable_t* htable = create_hashtable();
+    
+    key_t key1 = "key1";
+    list_node_t* node1 = create_list_node();
+    
+    ck_assert(!hashtable_get(htable, &key1));
+    
+    hashtable_put(htable, &key1, node1);
+    ck_assert(!hashtable_is_empty(htable));
+    ck_assert_uint_eq(hashtable_length(htable), 1);
+    ck_assert(hashtable_get(htable, &key1) == node1);
+
+    hashtable_put(htable, &key1, node1);
+    // nothing should change
+    ck_assert_uint_eq(hashtable_length(htable), 1);
+    ck_assert(hashtable_get(htable, &key1) == node1);
+
+    hashtable_put(htable, &key1, NULL);
+    // NULL should overwrite node1
+    ck_assert_uint_eq(hashtable_length(htable), 1);
+    ck_assert(hashtable_get(htable, &key1) == NULL);
+    hashtable_put(htable, &key1, node1);
+
+    key_t key2 = "key2";
+    list_node_t* node2 = create_list_node();
+    hashtable_put(htable, &key2, node2);
+
+    hashtable_print(htable);    
+
+    ck_assert_uint_eq(hashtable_length(htable), 2);
+    ck_assert(hashtable_get(htable, &key1) == node1);
+    ck_assert(hashtable_get(htable, &key2) == node2);
+
+    key_t key3 = "key3";
+    list_node_t* node3 = create_list_node();
+    hashtable_put(htable, &key3, node3);
+
+    hashtable_print(htable);
+
+    ck_assert_uint_eq(hashtable_length(htable), 3);
+    ck_assert(hashtable_get(htable, &key1) == node1);
+    ck_assert(hashtable_get(htable, &key2) == node2);
+    ck_assert(hashtable_get(htable, &key3) == node3);
+
+    bool status = hashtable_delete_entry(htable, &key2);
+    ck_assert(status);
+
+    hashtable_print(htable);
+
+    ck_assert_uint_eq(hashtable_length(htable), 2);
+    ck_assert(hashtable_get(htable, &key1) == node1);
+    ck_assert(hashtable_get(htable, &key3) == node3);
+
+    status = hashtable_delete_entry(htable, &key2);
+    // nothing should change
+    ck_assert(!status);
+    ck_assert_uint_eq(hashtable_length(htable), 2);
+    ck_assert(hashtable_get(htable, &key1) == node1);
+    ck_assert(hashtable_get(htable, &key3) == node3);
+
+    status = hashtable_delete_entry(htable, &key1);
+    ck_assert(status);
+    ck_assert_uint_eq(hashtable_length(htable), 1);
+    ck_assert(hashtable_get(htable, &key3) == node3);
+
+    hashtable_print(htable);
+    
+    status = hashtable_delete_entry(htable, &key3);
+    ck_assert(status);
+    ck_assert_uint_eq(hashtable_length(htable), 0);
+    ck_assert(hashtable_is_empty(htable));
+    
+    hashtable_print(htable);
+
+    delete_hashtable(htable);
+    delete_list_node(node1);
+    delete_list_node(node2);
+    delete_list_node(node3);
+}
+END_TEST
 
 
 Suite* list_suite(void) {
@@ -169,14 +293,25 @@ Suite* list_suite(void) {
     TCase *tc_page = tcase_create("Page");
     tcase_add_test(tc_page, test_page);
 
+    // Key tests
+    TCase *tc_key = tcase_create("Key");
+    tcase_add_test(tc_key, test_key);
+
     // Clist tests
     TCase *tc_clist = tcase_create("Clist");
     tcase_add_test(tc_clist, test_list_create);
     tcase_add_test(tc_clist, test_list_push_pop);
     tcase_add_test(tc_clist, test_list_push_pop_randomized);
 
+    // Chashtable tests
+    TCase *tc_chashtable = tcase_create("Chashtable");
+    tcase_add_test(tc_chashtable, test_hashtable_create);
+    tcase_add_test(tc_chashtable, test_hashtable_put_get_delete);
+
     suite_add_tcase(s, tc_page);
+    suite_add_tcase(s, tc_key);
     suite_add_tcase(s, tc_clist);
+    suite_add_tcase(s, tc_chashtable);
     return s;
 }
 

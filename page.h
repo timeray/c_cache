@@ -1,6 +1,7 @@
 #pragma once
 
 #include <stddef.h>
+#include <stdbool.h>
 
 struct page_t {
     size_t size;
@@ -8,10 +9,10 @@ struct page_t {
 };
 
 typedef struct page_t page_t;
-
 typedef const char* key_t;
 
 page_t* create_page(const char*);
 page_t* copy_page(const page_t*);
 void delete_page(page_t*);
-
+int key_hash(const key_t*);
+bool key_equal(const key_t*, const key_t*);

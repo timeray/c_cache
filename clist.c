@@ -28,15 +28,29 @@ list_t* create_list(void) {
     return list_ptr;
 }
 
+
 void delete_list(list_t* list) {
-    while (!is_list_empty(list)) {
-        list_pop_back(list);
+    if (list != NULL) {
+        while (!is_list_empty(list)) {
+            list_pop_back(list);
+        }
+        free(list);
     }
-    free(list);
 }
 
+
+list_node_t* create_list_node(void) {
+    return calloc(1, sizeof(list_node_t));
+}
+
+
+void delete_list_node(list_node_t* node) {
+    free(node);
+}
+
+
 void list_push_front(list_t* list, page_t* page) {
-    list_node_t* new_node = calloc(1, sizeof(list_node_t));
+    list_node_t* new_node = create_list_node();
 
     new_node->page = page;
     new_node->next = list->head;
@@ -49,7 +63,7 @@ void list_push_front(list_t* list, page_t* page) {
 }
 
 void list_push_back(list_t* list, page_t* page) {
-    list_node_t* new_node = calloc(1, sizeof(list_node_t));
+    list_node_t* new_node = create_list_node();
     new_node->page = page;
     new_node->prev = list->tail;
     if (list->tail != NULL) {
@@ -70,7 +84,7 @@ void list_pop_front(list_t* list) {
         // last element
         list->tail = NULL;
     }
-    free(node);
+    delete_list_node(node);
 }
 
 void list_pop_back(list_t* list) {
@@ -83,7 +97,7 @@ void list_pop_back(list_t* list) {
         // last element
         list->head = NULL;
     }
-    free(node);
+    delete_list_node(node);
 }
 
 page_t* list_front(const list_t* list) {

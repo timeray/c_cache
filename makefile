@@ -5,8 +5,8 @@ LIBINC=-lcheck
 OPT=-O2
 CFLAGS=-Wall $(INCDIRS) $(LIBDIRS) $(OPT)
 
-CFILES=page.c clist.c tests/test.c
-OBJECTS=page.o clist.o tests/test.o
+CFILES=page.c clist.c chashtable.c tests/test.c
+OBJECTS=page.o clist.o chashtable.o tests/test.o
 
 BINARY_TEST=test_bin
 

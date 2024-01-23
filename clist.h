@@ -10,6 +10,9 @@ typedef struct list_node_t list_node_t;
 list_t* create_list(void);
 void delete_list(list_t*);
 
+list_node_t* create_list_node(void);
+void delete_list_node(list_node_t*);
+
 void list_push_front(list_t*, page_t*);
 void list_push_back(list_t* list, page_t*);
 void list_pop_front(list_t*);

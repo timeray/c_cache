@@ -22,3 +22,22 @@ void delete_page(page_t* page) {
     free(page->data);
     free(page);
 }
+
+
+int key_hash(const key_t* key_ptr) {
+    return 1;
+}
+
+
+bool key_equal(const key_t* lhs, const key_t* rhs) {
+    if (*lhs == *rhs) {
+        return true;
+    }
+    size_t lhs_len = strlen(*lhs);
+    size_t rhs_len = strlen(*rhs);
+    if (lhs_len != rhs_len) {
+        return false;
+    }
+    return !strcmp(*lhs, *rhs);
+}
+
