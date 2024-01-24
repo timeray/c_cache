@@ -24,8 +24,21 @@ void delete_page(page_t* page) {
 }
 
 
-int key_hash(const key_t* key_ptr) {
-    return 1;
+/* djb2 hash function. URL: http://www.cse.yorku.ca/~oz/hash.html */
+static unsigned long hash(unsigned char *str) {
+    unsigned long hash = 5381;
+    int c;
+
+    while ((c = *str++))
+        hash = ((hash << 5) + hash) + c; /* hash * 33 + c */
+
+    return hash;
+}
+
+
+
+unsigned long key_hash(key_t* key_ptr) {
+    return hash((unsigned char*)*key_ptr);
 }
 
 

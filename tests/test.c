@@ -5,6 +5,9 @@
 #include "../clist.h"
 #include "../chashtable.h"
 
+#define HASH_TEST_ARR_SIZE 1000
+#define HASH_TEST_N_VALS 100000
+
 
 START_TEST(test_page)
 {
@@ -37,10 +40,36 @@ START_TEST(test_key)
     key_t key1 = {"Hello, key"};
     key_t key2 = key1;
     key_t key3 = {"Hello, keyw"};
-    ck_assert_int_eq(key_hash(&key1), 1);
+    ck_assert_int_eq(key_hash(&key1), 2033380110);
     ck_assert_str_eq(key1, "Hello, key");
     ck_assert(key_equal(&key1, &key2));
     ck_assert(!key_equal(&key1, &key3));
+}
+END_TEST
+
+
+static float calc_mean(int* arr, size_t size) {
+    float res = 0.0;
+    for (size_t i = 0; i < size; ++i) {
+        res += (float)arr[i];
+    }
+    return res / (float)size;
+}
+
+
+START_TEST(test_hash)
+{
+    int freqs[HASH_TEST_ARR_SIZE] = {0};
+    char buf[100];
+    char* buf_ptr = (char*) buf;
+    for (size_t i = 0; i < HASH_TEST_N_VALS; ++i) {
+        sprintf_s(buf, 100, "key%zu", i);
+        ++freqs[key_hash(&buf_ptr) % HASH_TEST_ARR_SIZE];
+    }
+    float mean = calc_mean(freqs, HASH_TEST_ARR_SIZE);
+    float expected_mean = (float)HASH_TEST_N_VALS / HASH_TEST_ARR_SIZE;
+    ck_assert_float_eq_tol(mean, expected_mean, 0.1);
+    printf("String hash stat test: mean = %f (expected %f)\n", mean, expected_mean);
 }
 END_TEST
 
@@ -296,6 +325,7 @@ Suite* list_suite(void) {
     // Key tests
     TCase *tc_key = tcase_create("Key");
     tcase_add_test(tc_key, test_key);
+    tcase_add_test(tc_key, test_hash);
 
     // Clist tests
     TCase *tc_clist = tcase_create("Clist");
