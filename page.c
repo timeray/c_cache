@@ -7,7 +7,7 @@ page_t* create_page(const char* arr) {
     page_t* page = malloc(sizeof(page_t));
     page->size = strlen(arr);
     page->data = malloc(page->size + 1);
-    strcpy_s(page->data, page->size + 1, arr);
+    strcpy(page->data, arr);
     return page;
 }
 
@@ -25,7 +25,7 @@ void delete_page(page_t* page) {
 
 
 /* djb2 hash function. URL: http://www.cse.yorku.ca/~oz/hash.html */
-static unsigned long hash(unsigned char *str) {
+static unsigned long hash(const unsigned char *str) {
     unsigned long hash = 5381;
     int c;
 
@@ -37,12 +37,12 @@ static unsigned long hash(unsigned char *str) {
 
 
 
-unsigned long key_hash(key_t* key_ptr) {
-    return hash((unsigned char*)*key_ptr);
+unsigned long key_hash(const tkey_t* key_ptr) {
+    return hash((const unsigned char*)*key_ptr);
 }
 
 
-bool key_equal(const key_t* lhs, const key_t* rhs) {
+bool key_equal(const tkey_t* lhs, const tkey_t* rhs) {
     if (*lhs == *rhs) {
         return true;
     }

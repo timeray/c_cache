@@ -1,9 +1,9 @@
 CC=gcc
 INCDIRS=-I.
 LIBDIRS=-L/ucrt64/lib
-LIBINC=-lcheck
+LIBINC=-lcheck -lm -lsubunit
 OPT=-O2
-CFLAGS=-Wall $(INCDIRS) $(LIBDIRS) $(OPT)
+CFLAGS=-Wall -std=c11 $(INCDIRS) $(LIBDIRS) $(OPT)
 
 CFILES=page.c clist.c chashtable.c tests/test.c
 OBJECTS=page.o clist.o chashtable.o tests/test.o

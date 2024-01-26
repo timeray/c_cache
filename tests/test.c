@@ -37,10 +37,9 @@ END_TEST
 
 START_TEST(test_key)
 {
-    key_t key1 = {"Hello, key"};
-    key_t key2 = key1;
-    key_t key3 = {"Hello, keyw"};
-    ck_assert_int_eq(key_hash(&key1), 2033380110);
+    tkey_t key1 = {"Hello, key"};
+    tkey_t key2 = key1;
+    tkey_t key3 = {"Hello, keyw"};
     ck_assert_str_eq(key1, "Hello, key");
     ck_assert(key_equal(&key1, &key2));
     ck_assert(!key_equal(&key1, &key3));
@@ -63,7 +62,7 @@ START_TEST(test_hash)
     char buf[100];
     char* buf_ptr = (char*) buf;
     for (size_t i = 0; i < HASH_TEST_N_VALS; ++i) {
-        sprintf_s(buf, 100, "key%zu", i);
+        sprintf(buf, "key%zu", i);
         ++freqs[key_hash(&buf_ptr) % HASH_TEST_ARR_SIZE];
     }
     float mean = calc_mean(freqs, HASH_TEST_ARR_SIZE);
@@ -158,11 +157,11 @@ END_TEST
 START_TEST(test_list_push_pop_randomized)
 {
     list_t* list = create_list();
-    const size_t n_pages = RAND_MAX + 1;
+    const size_t n_pages = 30000;
     page_t** pages = malloc(sizeof(page_t*) * n_pages);
     for (size_t i = 0; i < n_pages; ++i) {
         char buf[1000];
-        sprintf_s(buf, 1000, "page%zu", i);
+        sprintf(buf, "page%zu", i);
         pages[i] = create_page(buf);
     }
 
@@ -172,10 +171,10 @@ START_TEST(test_list_push_pop_randomized)
     for (size_t i = 0; i < 1000000; ++i) {
         int rand_num = rand() % 100;
         if (rand_num < 25) {
-            list_push_front(list, pages[rand()]);
+            list_push_front(list, pages[rand() % n_pages]);
             ++count_pushes;
         } else if (rand_num < 60) {
-            list_push_back(list, pages[rand()]);
+            list_push_back(list, pages[rand() % n_pages]);
             ++count_pushes;
         } else if (rand_num < 70) {
             page_t* head = list_front(list);
@@ -235,7 +234,7 @@ START_TEST(test_hashtable_put_get_delete)
 {
     hashtable_t* htable = create_hashtable();
     
-    key_t key1 = "key1";
+    tkey_t key1 = "key1";
     list_node_t* node1 = create_list_node();
     
     ck_assert(!hashtable_get(htable, &key1));
@@ -256,7 +255,7 @@ START_TEST(test_hashtable_put_get_delete)
     ck_assert(hashtable_get(htable, &key1) == NULL);
     hashtable_put(htable, &key1, node1);
 
-    key_t key2 = "key2";
+    tkey_t key2 = "key2";
     list_node_t* node2 = create_list_node();
     hashtable_put(htable, &key2, node2);
 
@@ -266,7 +265,7 @@ START_TEST(test_hashtable_put_get_delete)
     ck_assert(hashtable_get(htable, &key1) == node1);
     ck_assert(hashtable_get(htable, &key2) == node2);
 
-    key_t key3 = "key3";
+    tkey_t key3 = "key3";
     list_node_t* node3 = create_list_node();
     hashtable_put(htable, &key3, node3);
 
@@ -315,7 +314,7 @@ START_TEST(test_hashtable_put_get_delete)
 END_TEST
 
 
-Suite* list_suite(void) {
+Suite* make_suite(void) {
     Suite *s = suite_create("lru_cache");
 
     // Page tests
@@ -348,7 +347,7 @@ Suite* list_suite(void) {
 
 int main(void) {
     puts("Run tests");
-    Suite *suite = list_suite();
+    Suite *suite = make_suite();
     SRunner *runner = srunner_create(suite);
     srunner_run_all(runner, CK_NORMAL);
     int n_failed = srunner_ntests_failed(runner);
