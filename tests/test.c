@@ -5,8 +5,13 @@
 #include "../clist.h"
 #include "../chashtable.h"
 
-#define HASH_TEST_ARR_SIZE 1000
-#define HASH_TEST_N_VALS 100000
+
+enum { 
+    HASH_TEST_ARR_SIZE=1000,
+    HASH_TEST_N_VALS=100000,
+    RNG_TEST_SIZE=100000,
+    RNG_TEST_N_ITER=1000000,
+};
 
 
 START_TEST(test_page)
@@ -157,7 +162,7 @@ END_TEST
 START_TEST(test_list_push_pop_randomized)
 {
     list_t* list = create_list();
-    const size_t n_pages = 30000;
+    const size_t n_pages = RNG_TEST_SIZE;
     page_t** pages = malloc(sizeof(page_t*) * n_pages);
     for (size_t i = 0; i < n_pages; ++i) {
         char buf[1000];
@@ -168,7 +173,7 @@ START_TEST(test_list_push_pop_randomized)
     size_t count_pushes = 0;
     size_t count_pops = 0;
 
-    for (size_t i = 0; i < 1000000; ++i) {
+    for (size_t i = 0; i < RNG_TEST_N_ITER; ++i) {
         int rand_num = rand() % 100;
         if (rand_num < 25) {
             list_push_front(list, pages[rand() % n_pages]);
@@ -258,9 +263,6 @@ START_TEST(test_hashtable_put_get_delete)
     tkey_t key2 = "key2";
     list_node_t* node2 = create_list_node();
     hashtable_put(htable, &key2, node2);
-
-    hashtable_print(htable);    
-
     ck_assert_uint_eq(hashtable_length(htable), 2);
     ck_assert(hashtable_get(htable, &key1) == node1);
     ck_assert(hashtable_get(htable, &key2) == node2);
@@ -268,9 +270,6 @@ START_TEST(test_hashtable_put_get_delete)
     tkey_t key3 = "key3";
     list_node_t* node3 = create_list_node();
     hashtable_put(htable, &key3, node3);
-
-    hashtable_print(htable);
-
     ck_assert_uint_eq(hashtable_length(htable), 3);
     ck_assert(hashtable_get(htable, &key1) == node1);
     ck_assert(hashtable_get(htable, &key2) == node2);
@@ -278,9 +277,6 @@ START_TEST(test_hashtable_put_get_delete)
 
     bool status = hashtable_delete_entry(htable, &key2);
     ck_assert(status);
-
-    hashtable_print(htable);
-
     ck_assert_uint_eq(hashtable_length(htable), 2);
     ck_assert(hashtable_get(htable, &key1) == node1);
     ck_assert(hashtable_get(htable, &key3) == node3);
@@ -296,20 +292,64 @@ START_TEST(test_hashtable_put_get_delete)
     ck_assert(status);
     ck_assert_uint_eq(hashtable_length(htable), 1);
     ck_assert(hashtable_get(htable, &key3) == node3);
-
-    hashtable_print(htable);
     
     status = hashtable_delete_entry(htable, &key3);
     ck_assert(status);
     ck_assert_uint_eq(hashtable_length(htable), 0);
     ck_assert(hashtable_is_empty(htable));
     
-    hashtable_print(htable);
-
     delete_hashtable(htable);
     delete_list_node(node1);
     delete_list_node(node2);
     delete_list_node(node3);
+}
+END_TEST
+
+
+START_TEST(test_hashtable_randomized)
+{
+    hashtable_t* htable = create_hashtable();
+    const size_t n = RNG_TEST_SIZE;
+    list_node_t** nodes = malloc(sizeof(list_node_t*) * n);
+    tkey_t* keys = malloc(sizeof(tkey_t) * n);
+    for (size_t i = 0; i < n; ++i) {
+        nodes[i] = create_list_node();
+        keys[i] = malloc(20);
+        sprintf(keys[i], "%zu", rand() % n);
+    }
+
+    const size_t n_iter = RNG_TEST_N_ITER;
+    size_t count_puts = 0;
+    size_t count_gets = 0;
+    size_t count_dels = 0;
+    size_t count_successful_dels = 0;
+    for (size_t i = 0; i < n_iter; ++i) {
+        size_t op_num = rand() % 100;
+        tkey_t key = keys[rand() % n];
+        list_node_t* node = nodes[rand() % n];
+
+        if (op_num < 50) {
+            ++count_puts;
+            hashtable_put(htable, &key, node);
+        } else if (op_num < 80) {
+            ++count_gets;
+            hashtable_get(htable, &key);
+        } else {
+            ++count_dels;
+            bool del_res = hashtable_delete_entry(htable, &key);
+            if (del_res) ++count_successful_dels;
+        }
+    }
+    printf("n_iter = %zu, n_put = %zu, n_get = %zu, n_del = %zu (n successful dels = %zu)\n",
+           n_iter, count_puts, count_gets, count_dels, count_successful_dels);
+
+    for (size_t i = 0; i < n; ++i) {
+        free(keys[i]);
+        delete_list_node(nodes[i]);
+    }
+    free(keys);
+    free(nodes);
+    delete_hashtable(htable);
 }
 END_TEST
 
@@ -336,6 +376,7 @@ Suite* make_suite(void) {
     TCase *tc_chashtable = tcase_create("Chashtable");
     tcase_add_test(tc_chashtable, test_hashtable_create);
     tcase_add_test(tc_chashtable, test_hashtable_put_get_delete);
+    tcase_add_test(tc_chashtable, test_hashtable_randomized);
 
     suite_add_tcase(s, tc_page);
     suite_add_tcase(s, tc_key);

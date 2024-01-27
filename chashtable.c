@@ -149,7 +149,7 @@ bool hashtable_delete_entry(hashtable_t* htable, const tkey_t* key_ptr) {
     } else {
         free(htable->table);
         htable->table = NULL;
-        --htable->n_buckets;
+        htable->n_buckets = 0;
     }
     return true;
 }
@@ -164,25 +164,59 @@ void hashtable_print(const hashtable_t* htable) {
     printf("n entries = %zu, n_buckets = %zu\n", htable->n_entries, htable->n_buckets);
     for (size_t buck = 0; buck < htable->n_buckets; ++buck) {
         printf("->Bucket %zu\n", buck);
-        hashtable_entry_t* entry = htable->table[0];
+        hashtable_entry_t* entry = htable->table[buck];
         size_t count = 0;
         while (entry != NULL) {
             printf("\tEntry %zu: addr=%p, key=%s, node=%p, next=%p\n", count, entry, entry->key, entry->node, entry->next);
             entry = entry->next;
+            ++count;
         }
     }
 }
 
 
 static void rehash(hashtable_t* htable) {
+    // When this funcion is called, n_buckets > 0 and n_entries > 0
+    if (htable->n_entries == 1) {
+        return;
+    }
     float load_factor = (float) htable->n_entries / htable->n_buckets;
     if ((load_factor > MAX_LOAD_FACTOR) || (load_factor < (float) MAX_LOAD_FACTOR / 4)) {
         // Perform rehash
+        size_t new_n_buckets = 1;
         if (load_factor > MAX_LOAD_FACTOR) {
-            // Double number of buckets
-        } else {
-            // Decrease number of buckets by factor of 4
+            new_n_buckets = htable->n_buckets * 2;
+        } else if (htable->n_buckets > 1) {
+            new_n_buckets = htable->n_buckets / 2;
         }
+        
+        printf("REHASH, n_entries = %zu, old_n_buckets = %zu, new_n_buckets = %zu\n", htable->n_entries, htable->n_buckets, new_n_buckets);
+
+        hashtable_entry_t** old_table = htable->table;
+        size_t old_n_buckets = htable->n_buckets;
+        htable->table = malloc(sizeof(hashtable_entry_t*) * new_n_buckets);
+        for (size_t i = 0; i < new_n_buckets; ++i) {
+            htable->table[i] = NULL;
+        }
+        htable->n_buckets = new_n_buckets;
+
+        for (size_t buck_num = 0; buck_num < old_n_buckets; ++buck_num) {
+            hashtable_entry_t* node = old_table[buck_num];
+            while (node != NULL) {
+                hashtable_entry_t* next_node = node->next;
+                hashtable_entry_t** new_bucket_ptr = get_bucket(htable, &node->key);
+                if (*new_bucket_ptr == NULL) {
+                    // First node of the list
+                    node->next = NULL;
+                } else {
+                    // Add to list head
+                    node->next = *new_bucket_ptr;
+                }
+                *new_bucket_ptr = node;
+                node = next_node;
+            }
+        }
+        free(old_table);
     }
 }
 
