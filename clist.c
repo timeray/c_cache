@@ -3,9 +3,9 @@
 #include "clist.h"
 
 struct list_node_t {
-	list_node_t* next;
-	list_node_t* prev;
-	page_t* page;
+    list_node_t* next;
+    list_node_t* prev;
+    page_t* page;
 };
 
 

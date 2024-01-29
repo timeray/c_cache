@@ -17,23 +17,23 @@ enum {
 START_TEST(test_page)
 {
     {
-        page_t* page = create_page("");
-        ck_assert_uint_eq(page->size, 0);
+        page_t* page = create_page("", "");
+        ck_assert_str_eq(page->key, "");
         ck_assert_str_eq(page->data, "");
         delete_page(page);
     }
     {
-        page_t* page = create_page("Hello");
-        ck_assert_uint_eq(page->size, 5);
-        ck_assert_str_eq(page->data, "Hello");
+        page_t* page = create_page("Hello", "World");
+        ck_assert_str_eq(page->key, "Hello");
+        ck_assert_str_eq(page->data, "World");
         delete_page(page);
     }
     {
-        page_t* page = create_page("Ref_page");
+        page_t* page = create_page("key", "Ref_page");
         page_t* page_copy = copy_page(page);
         delete_page(page);
+        ck_assert_str_eq(page_copy->key, "key");
         ck_assert_str_eq(page_copy->data, "Ref_page");
-        ck_assert_uint_eq(page_copy->size, 8);
         delete_page(page_copy);
     }
 }
@@ -42,12 +42,12 @@ END_TEST
 
 START_TEST(test_key)
 {
-    tkey_t key1 = {"Hello, key"};
-    tkey_t key2 = key1;
-    tkey_t key3 = {"Hello, keyw"};
+    char* key1 = {"Hello, key"};
+    char* key2 = key1;
+    char* key3 = {"Hello, keyw"};
     ck_assert_str_eq(key1, "Hello, key");
-    ck_assert(key_equal(&key1, &key2));
-    ck_assert(!key_equal(&key1, &key3));
+    ck_assert(key_equal(key1, key2));
+    ck_assert(!key_equal(key1, key3));
 }
 END_TEST
 
@@ -68,7 +68,7 @@ START_TEST(test_hash)
     char* buf_ptr = (char*) buf;
     for (size_t i = 0; i < HASH_TEST_N_VALS; ++i) {
         sprintf(buf, "key%zu", i);
-        ++freqs[key_hash(&buf_ptr) % HASH_TEST_ARR_SIZE];
+        ++freqs[key_hash(buf_ptr) % HASH_TEST_ARR_SIZE];
     }
     float mean = calc_mean(freqs, HASH_TEST_ARR_SIZE);
     float expected_mean = (float)HASH_TEST_N_VALS / HASH_TEST_ARR_SIZE;
@@ -93,11 +93,11 @@ START_TEST(test_list_push_pop)
 {
     list_t* list = create_list();
 
-    page_t* page1 = create_page("page1");
-    page_t* page2 = create_page("page2");
-    page_t* page3 = create_page("page3");
-    page_t* page4 = create_page("page4");
-    page_t* page5 = create_page("page5");
+    page_t* page1 = create_page("key1", "page1");
+    page_t* page2 = create_page("key2", "page2");
+    page_t* page3 = create_page("key3", "page3");
+    page_t* page4 = create_page("key4", "page4");
+    page_t* page5 = create_page("key5", "page5");
 
     list_push_front(list, page1);
     ck_assert_uint_eq(list_length(list), 1);
@@ -167,7 +167,7 @@ START_TEST(test_list_push_pop_randomized)
     for (size_t i = 0; i < n_pages; ++i) {
         char buf[1000];
         sprintf(buf, "page%zu", i);
-        pages[i] = create_page(buf);
+        pages[i] = create_page("", buf);
     }
 
     size_t count_pushes = 0;
@@ -239,65 +239,73 @@ START_TEST(test_hashtable_put_get_delete)
 {
     hashtable_t* htable = create_hashtable();
     
-    tkey_t key1 = "key1";
+    const char* key1 = "key1";
     list_node_t* node1 = create_list_node();
     
-    ck_assert(!hashtable_get(htable, &key1));
+    ck_assert(!hashtable_get(htable, key1));
     
-    hashtable_put(htable, &key1, node1);
+    hashtable_put(htable, key1, node1);
     ck_assert(!hashtable_is_empty(htable));
     ck_assert_uint_eq(hashtable_length(htable), 1);
-    ck_assert(hashtable_get(htable, &key1) == node1);
+    ck_assert(hashtable_get(htable, key1) == node1);
 
-    hashtable_put(htable, &key1, node1);
+    hashtable_put(htable, key1, node1);
     // nothing should change
     ck_assert_uint_eq(hashtable_length(htable), 1);
-    ck_assert(hashtable_get(htable, &key1) == node1);
+    ck_assert(hashtable_get(htable, key1) == node1);
 
-    hashtable_put(htable, &key1, NULL);
+    hashtable_put(htable, key1, NULL);
     // NULL should overwrite node1
     ck_assert_uint_eq(hashtable_length(htable), 1);
-    ck_assert(hashtable_get(htable, &key1) == NULL);
-    hashtable_put(htable, &key1, node1);
+    ck_assert(hashtable_get(htable, key1) == NULL);
+    hashtable_put(htable, key1, node1);
 
-    tkey_t key2 = "key2";
+    const char* key2 = "key2";
     list_node_t* node2 = create_list_node();
-    hashtable_put(htable, &key2, node2);
+    hashtable_put(htable, key2, node2);
     ck_assert_uint_eq(hashtable_length(htable), 2);
-    ck_assert(hashtable_get(htable, &key1) == node1);
-    ck_assert(hashtable_get(htable, &key2) == node2);
+    ck_assert(hashtable_get(htable, key1) == node1);
+    ck_assert(hashtable_get(htable, key2) == node2);
 
-    tkey_t key3 = "key3";
+    const char* key3 = "key3";
     list_node_t* node3 = create_list_node();
-    hashtable_put(htable, &key3, node3);
+    hashtable_put(htable, key3, node3);
     ck_assert_uint_eq(hashtable_length(htable), 3);
-    ck_assert(hashtable_get(htable, &key1) == node1);
-    ck_assert(hashtable_get(htable, &key2) == node2);
-    ck_assert(hashtable_get(htable, &key3) == node3);
+    ck_assert(hashtable_get(htable, key1) == node1);
+    ck_assert(hashtable_get(htable, key2) == node2);
+    ck_assert(hashtable_get(htable, key3) == node3);
 
-    bool status = hashtable_delete_entry(htable, &key2);
+    bool status = hashtable_delete_entry(htable, key2);
     ck_assert(status);
     ck_assert_uint_eq(hashtable_length(htable), 2);
-    ck_assert(hashtable_get(htable, &key1) == node1);
-    ck_assert(hashtable_get(htable, &key3) == node3);
+    ck_assert(hashtable_get(htable, key1) == node1);
+    ck_assert(hashtable_get(htable, key3) == node3);
 
-    status = hashtable_delete_entry(htable, &key2);
+    status = hashtable_delete_entry(htable, key2);
     // nothing should change
     ck_assert(!status);
     ck_assert_uint_eq(hashtable_length(htable), 2);
-    ck_assert(hashtable_get(htable, &key1) == node1);
-    ck_assert(hashtable_get(htable, &key3) == node3);
+    ck_assert(hashtable_get(htable, key1) == node1);
+    ck_assert(hashtable_get(htable, key3) == node3);
 
-    status = hashtable_delete_entry(htable, &key1);
+    status = hashtable_delete_entry(htable, key1);
     ck_assert(status);
     ck_assert_uint_eq(hashtable_length(htable), 1);
-    ck_assert(hashtable_get(htable, &key3) == node3);
+    ck_assert(hashtable_get(htable, key3) == node3);
     
-    status = hashtable_delete_entry(htable, &key3);
+    status = hashtable_delete_entry(htable, key3);
     ck_assert(status);
     ck_assert_uint_eq(hashtable_length(htable), 0);
     ck_assert(hashtable_is_empty(htable));
     
+    {
+        char arr[20] = "key4";
+        char* key4 = arr;
+        hashtable_put(htable, key4, node3);
+    }
+    char* key4 = "key4";
+    ck_assert(hashtable_get(htable, key4) == node3);
+
     delete_hashtable(htable);
     delete_list_node(node1);
     delete_list_node(node2);
@@ -311,7 +319,7 @@ START_TEST(test_hashtable_randomized)
     hashtable_t* htable = create_hashtable();
     const size_t n = RNG_TEST_SIZE;
     list_node_t** nodes = malloc(sizeof(list_node_t*) * n);
-    tkey_t* keys = malloc(sizeof(tkey_t) * n);
+    char** keys = malloc(sizeof(char*) * n);
     for (size_t i = 0; i < n; ++i) {
         nodes[i] = create_list_node();
         keys[i] = malloc(20);
@@ -325,18 +333,18 @@ START_TEST(test_hashtable_randomized)
     size_t count_successful_dels = 0;
     for (size_t i = 0; i < n_iter; ++i) {
         size_t op_num = rand() % 100;
-        tkey_t key = keys[rand() % n];
+        char* key = keys[rand() % n];
         list_node_t* node = nodes[rand() % n];
 
         if (op_num < 50) {
             ++count_puts;
-            hashtable_put(htable, &key, node);
+            hashtable_put(htable, key, node);
         } else if (op_num < 80) {
             ++count_gets;
-            hashtable_get(htable, &key);
+            hashtable_get(htable, key);
         } else {
             ++count_dels;
-            bool del_res = hashtable_delete_entry(htable, &key);
+            bool del_res = hashtable_delete_entry(htable, key);
             if (del_res) ++count_successful_dels;
         }
     }

@@ -8,7 +8,7 @@
 
 
 struct hashtable_entry_t {
-    tkey_t key;
+    char* key;
     list_node_t* node;
     hashtable_entry_t* next;
 };
@@ -22,13 +22,13 @@ struct hashtable_t {
 
 
 static void rehash(hashtable_t*);
-static hashtable_entry_t** get_bucket(const hashtable_t*, const tkey_t*);
-static hashtable_entry_t* find_entry(const hashtable_t*, const tkey_t*);
+static hashtable_entry_t** get_bucket(const hashtable_t*, const char*);
+static hashtable_entry_t* find_entry(const hashtable_t*, const char*);
 
 
-static hashtable_entry_t* create_hashtable_entry(const tkey_t* key_ptr, list_node_t* node, hashtable_entry_t* next) {
+static hashtable_entry_t* create_hashtable_entry(const char* key, list_node_t* node, hashtable_entry_t* next) {
     hashtable_entry_t* entry = malloc(sizeof(hashtable_entry_t));
-    entry->key = *key_ptr;
+    entry->key = string_dup(key);
     entry->node = node;
     entry->next = next;
     return entry;
@@ -36,6 +36,7 @@ static hashtable_entry_t* create_hashtable_entry(const tkey_t* key_ptr, list_nod
 
 
 static void delete_hashtable_entry(hashtable_entry_t* entry) {
+    free(entry->key);
     free(entry);
 }
 
@@ -75,8 +76,8 @@ size_t hashtable_length(const hashtable_t* htable) {
 }
 
 
-list_node_t* hashtable_get(const hashtable_t* htable, const tkey_t* key_ptr) {
-    hashtable_entry_t* entry = find_entry(htable, key_ptr);
+list_node_t* hashtable_get(const hashtable_t* htable, const char* key) {
+    hashtable_entry_t* entry = find_entry(htable, key);
     if (entry != NULL) {
         return entry->node;
     } else {
@@ -85,15 +86,15 @@ list_node_t* hashtable_get(const hashtable_t* htable, const tkey_t* key_ptr) {
 }
 
 
-void hashtable_put(hashtable_t* htable, const tkey_t* key_ptr, list_node_t* node) {
+void hashtable_put(hashtable_t* htable, const char* key, list_node_t* node) {
     if (htable->n_entries == 0) {
         htable->table = malloc(sizeof(hashtable_entry_t*));
         ++htable->n_buckets;
 
-        hashtable_entry_t* entry = create_hashtable_entry(key_ptr, node, NULL);
+        hashtable_entry_t* entry = create_hashtable_entry(key, node, NULL);
         htable->table[0] = entry;
     } else {
-        hashtable_entry_t* entry = find_entry(htable, key_ptr);
+        hashtable_entry_t* entry = find_entry(htable, key);
 
         // Overwrite existing node
         if (entry != NULL) {
@@ -102,8 +103,8 @@ void hashtable_put(hashtable_t* htable, const tkey_t* key_ptr, list_node_t* node
         }
 
         // Create new entry in the head of list
-        hashtable_entry_t** bucket_ptr = get_bucket(htable, key_ptr);
-        hashtable_entry_t* new_entry = create_hashtable_entry(key_ptr, node, NULL);
+        hashtable_entry_t** bucket_ptr = get_bucket(htable, key);
+        hashtable_entry_t* new_entry = create_hashtable_entry(key, node, NULL);
         if (*bucket_ptr != NULL) {
             new_entry->next = *bucket_ptr;
         }
@@ -115,17 +116,17 @@ void hashtable_put(hashtable_t* htable, const tkey_t* key_ptr, list_node_t* node
 }
 
 
-bool hashtable_delete_entry(hashtable_t* htable, const tkey_t* key_ptr) {
+bool hashtable_delete_entry(hashtable_t* htable, const char* key) {
     if (htable->n_entries == 0) {
         return false;
     }
 
-    hashtable_entry_t* entry = find_entry(htable, key_ptr);
+    hashtable_entry_t* entry = find_entry(htable, key);
     if (entry == NULL) {
         return false;
     }
 
-    hashtable_entry_t** bucket_ptr = get_bucket(htable, key_ptr);
+    hashtable_entry_t** bucket_ptr = get_bucket(htable, key);
     if ((*bucket_ptr)->next == NULL) {
         // Then bucket has only one entry
         *bucket_ptr = NULL;
@@ -204,7 +205,7 @@ static void rehash(hashtable_t* htable) {
             hashtable_entry_t* node = old_table[buck_num];
             while (node != NULL) {
                 hashtable_entry_t* next_node = node->next;
-                hashtable_entry_t** new_bucket_ptr = get_bucket(htable, &node->key);
+                hashtable_entry_t** new_bucket_ptr = get_bucket(htable, node->key);
                 if (*new_bucket_ptr == NULL) {
                     // First node of the list
                     node->next = NULL;
@@ -221,19 +222,19 @@ static void rehash(hashtable_t* htable) {
 }
 
 
-static hashtable_entry_t** get_bucket(const hashtable_t* htable, const tkey_t* key_ptr) {
-    return &htable->table[key_hash(key_ptr) % htable->n_buckets];
+static hashtable_entry_t** get_bucket(const hashtable_t* htable, const char* key) {
+    return &htable->table[key_hash(key) % htable->n_buckets];
 }
 
 
-static hashtable_entry_t* find_entry(const hashtable_t* htable, const tkey_t* key_ptr) {
+static hashtable_entry_t* find_entry(const hashtable_t* htable, const char* key) {
     if (htable->n_entries == 0) {
         return NULL;
     }
 
-    hashtable_entry_t* entry = *get_bucket(htable, key_ptr);
+    hashtable_entry_t* entry = *get_bucket(htable, key);
     while (entry != NULL) {        
-        if (key_equal(&entry->key, key_ptr) == true) {
+        if (key_equal(entry->key, key) == true) {
             break;
         }
         entry = entry->next;
