@@ -159,6 +159,49 @@ START_TEST(test_list_push_pop)
 END_TEST
 
 
+START_TEST(test_list_move_upfront)
+{
+    list_t* list = create_list();
+
+    page_t* page1 = create_page("key1", "page1");
+    page_t* page2 = create_page("key2", "page2");
+    page_t* page3 = create_page("key3", "page3");
+
+    list_node_t* node1 = list_push_front(list, page1);
+    list_move_upfront(list, node1);
+    ck_assert_ptr_eq(list_front(list), page1);
+
+    list_node_t* node2 = list_push_back(list, page2);
+    list_move_upfront(list, node2);
+    ck_assert_ptr_eq(list_front(list), page2);
+    ck_assert_ptr_eq(list_back(list), page1);
+
+    list_node_t* node3 = list_push_front(list, page3);
+    list_move_upfront(list, node3);
+    ck_assert_ptr_eq(list_front(list), page3);
+
+    list_move_upfront(list, node1);
+    ck_assert_ptr_eq(list_front(list), page1);
+
+    list_move_upfront(list, node2);
+    ck_assert_ptr_eq(list_front(list), page2);
+    ck_assert_ptr_eq(list_back(list), page3);
+    ck_assert_uint_eq(list_length(list), 3);
+    
+    list_move_upfront(list, node3);
+    ck_assert_ptr_eq(list_front(list), page3);
+    ck_assert_ptr_eq(list_back(list), page1);
+    ck_assert_uint_eq(list_length(list), 3);
+
+    delete_page(page1);
+    delete_page(page2);
+    delete_page(page3);
+
+    delete_list(list);
+}
+END_TEST
+
+
 START_TEST(test_list_push_pop_randomized)
 {
     list_t* list = create_list();
@@ -179,8 +222,12 @@ START_TEST(test_list_push_pop_randomized)
             list_push_front(list, pages[rand() % n_pages]);
             ++count_pushes;
         } else if (rand_num < 60) {
-            list_push_back(list, pages[rand() % n_pages]);
+            list_node_t* push_node = list_push_back(list, pages[rand() % n_pages]);
             ++count_pushes;
+
+            if (rand() % 200) {
+                list_move_upfront(list, push_node);
+            }
         } else if (rand_num < 70) {
             page_t* head = list_front(list);
             if (!is_list_empty(list)) {
@@ -378,6 +425,7 @@ Suite* make_suite(void) {
     TCase *tc_clist = tcase_create("Clist");
     tcase_add_test(tc_clist, test_list_create);
     tcase_add_test(tc_clist, test_list_push_pop);
+    tcase_add_test(tc_clist, test_list_move_upfront);
     tcase_add_test(tc_clist, test_list_push_pop_randomized);
 
     // Chashtable tests

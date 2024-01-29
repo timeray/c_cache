@@ -2,8 +2,6 @@
 #include <string.h>
 
 #include "cache.h"
-#include "chashtable.h"
-#include "clist.h"
 
 
 struct lru_cache_t {
@@ -35,20 +33,21 @@ void delete_cache(lru_cache_t* cache) {
 }
 
 
-page_t* cached_call(lru_cache_t* cache, const tkey_t* key_ptr, page_t* (*get_page_slow)(const tkey_t*)) {
-    list_node_t* node = hashtable_get(cache->htable, key_ptr);
+page_t* cached_call(lru_cache_t* cache, const char* key, page_t* (*get_page_slow)(const char*)) {
+    list_node_t* node = hashtable_get(cache->htable, key);
     page_t* page;
     if (node == NULL) {
-        page = get_page_slow(key_ptr);
-        if (list_length(cache->list) == cache->size) {
-            delete_page(list_back(cache->list));
+        page = get_page_slow(key);
+        if (list_length(cache->list) == cache->max_size) {
+            page_t* del_page = list_back(cache->list);
             list_pop_back(cache->list);
-            hashtable_delete_entry(back_key??);
+            hashtable_delete_entry(cache->htable, del_page->key);
+            delete_page(del_page);
         }
-        list_node_t* node = list_push_front(cache->list, page);
-        hashtable_put(cache->htable, key_ptr, node);
+        list_node_t* new_node = list_push_front(cache->list, page);
+        hashtable_put(cache->htable, key, new_node);
     } else {
-        page = node->page;
+        page = copy_page(list_node_get_page(node));
         list_move_upfront(cache->list, node);
     }
     return page;

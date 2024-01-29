@@ -16,6 +16,11 @@ struct list_t {
 };
 
 
+page_t* list_node_get_page(list_node_t* node) {
+    return node->page;
+}
+
+
 bool is_list_empty(const list_t* list) {
     return ((list->head == NULL) && (list->tail == NULL));
 }
@@ -65,6 +70,7 @@ list_node_t* list_push_front(list_t* list, page_t* page) {
     return new_node;
 }
 
+
 list_node_t* list_push_back(list_t* list, page_t* page) {
     list_node_t* new_node = create_list_node();
     new_node->page = page;
@@ -78,6 +84,7 @@ list_node_t* list_push_back(list_t* list, page_t* page) {
     ++list->size;
     return new_node;
 }
+
 
 void list_pop_front(list_t* list) {
     list_node_t* node = list->head;
@@ -93,6 +100,7 @@ void list_pop_front(list_t* list) {
     delete_list_node(node);
 }
 
+
 void list_pop_back(list_t* list) {
     list_node_t* node = list->tail;
     list->tail = node->prev;
@@ -107,6 +115,7 @@ void list_pop_back(list_t* list) {
     delete_list_node(node);
 }
 
+
 page_t* list_front(const list_t* list) {
     if (!is_list_empty(list)) {
         return list->head->page;
@@ -114,6 +123,7 @@ page_t* list_front(const list_t* list) {
         return NULL;
     }
 }
+
 
 page_t* list_back(const list_t* list) {
     if (!is_list_empty(list)) {
@@ -123,9 +133,28 @@ page_t* list_back(const list_t* list) {
     }
 }
 
+
+void list_move_upfront(list_t* list, list_node_t* node) {
+    if (node == list->head) {
+        return;
+    }
+    node->prev->next = node->next;
+    if (node != list->tail) {
+        node->next->prev = node->prev;
+    } else {
+        list->tail = node->prev;
+    }
+    list->head->prev = node;
+    node->next = list->head;
+    node->prev = NULL;
+    list->head = node;
+}
+
+
 size_t list_length(const list_t* list) {
     return list->size;
 }
+
 
 void list_print(const list_t* list) {
     printf("List %p\n", list);
