@@ -12,6 +12,7 @@ struct list_node_t {
 struct list_t {
     list_node_t* head;
     list_node_t* tail;
+    size_t size;
 };
 
 
@@ -19,12 +20,12 @@ bool is_list_empty(const list_t* list) {
     return ((list->head == NULL) && (list->tail == NULL));
 }
 
-
 list_t* create_list(void) {
     list_t* list_ptr = malloc(sizeof(list_t));
     if (list_ptr == NULL) { return list_ptr; }
     list_ptr->head = NULL;
     list_ptr->tail = NULL;
+    list_ptr->size = 0;
     return list_ptr;
 }
 
@@ -49,7 +50,7 @@ void delete_list_node(list_node_t* node) {
 }
 
 
-void list_push_front(list_t* list, page_t* page) {
+list_node_t* list_push_front(list_t* list, page_t* page) {
     list_node_t* new_node = create_list_node();
 
     new_node->page = page;
@@ -60,9 +61,11 @@ void list_push_front(list_t* list, page_t* page) {
         list->tail = new_node;
     }
     list->head = new_node;
+    ++list->size;
+    return new_node;
 }
 
-void list_push_back(list_t* list, page_t* page) {
+list_node_t* list_push_back(list_t* list, page_t* page) {
     list_node_t* new_node = create_list_node();
     new_node->page = page;
     new_node->prev = list->tail;
@@ -72,6 +75,8 @@ void list_push_back(list_t* list, page_t* page) {
         list->head = new_node;
     }
     list->tail = new_node;
+    ++list->size;
+    return new_node;
 }
 
 void list_pop_front(list_t* list) {
@@ -84,6 +89,7 @@ void list_pop_front(list_t* list) {
         // last element
         list->tail = NULL;
     }
+    --list->size;
     delete_list_node(node);
 }
 
@@ -97,6 +103,7 @@ void list_pop_back(list_t* list) {
         // last element
         list->head = NULL;
     }
+    --list->size;
     delete_list_node(node);
 }
 
@@ -117,14 +124,7 @@ page_t* list_back(const list_t* list) {
 }
 
 size_t list_length(const list_t* list) {
-    if (is_list_empty(list)) { return 0; }
-    size_t count = 1;
-    list_node_t* next = list->head->next;
-    while (next != NULL) {
-        ++count;
-        next = next->next;
-    }
-    return count;
+    return list->size;
 }
 
 void list_print(const list_t* list) {

@@ -5,8 +5,8 @@ LIBINC=-lcheck -lm #-lsubunit
 OPT=-O2
 CFLAGS=-Wall -std=c11 $(INCDIRS) $(LIBDIRS) $(OPT)
 
-CFILES=page.c clist.c chashtable.c tests/test.c
-OBJECTS=page.o clist.o chashtable.o tests/test.o
+CFILES=page.c clist.c chashtable.c cache.c tests/test.c
+OBJECTS=page.o clist.o chashtable.o cache.o tests/test.o
 
 BINARY_TEST=test_bin
 
