@@ -18,9 +18,11 @@ page_t* copy_page(const page_t* page) {
 
 
 void delete_page(page_t* page) {
-    free(page->key);
-    free(page->data);
-    free(page);
+    if (page != NULL) {
+        free(page->key);
+        free(page->data);
+        free(page);
+    }
 }
 
 

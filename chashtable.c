@@ -36,8 +36,10 @@ static hashtable_entry_t* create_hashtable_entry(const char* key, list_node_t* n
 
 
 static void delete_hashtable_entry(hashtable_entry_t* entry) {
-    free(entry->key);
-    free(entry);
+    if (entry != NULL) {
+        free(entry->key);
+        free(entry);
+    }
 }
 
 

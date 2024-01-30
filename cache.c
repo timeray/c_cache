@@ -23,13 +23,15 @@ lru_cache_t* create_cache(size_t size) {
 
 
 void delete_cache(lru_cache_t* cache) {
-    delete_hashtable(cache->htable);
-    while (!is_list_empty(cache->list)) {
-        page_t* page = list_back(cache->list);
-        delete_page(page);
-        list_pop_back(cache->list);
+    if (cache != NULL) {
+        delete_hashtable(cache->htable);
+        while (!is_list_empty(cache->list)) {
+            page_t* page = list_back(cache->list);
+            delete_page(page);
+            list_pop_back(cache->list);
+        }
+        delete_list(cache->list);
     }
-    delete_list(cache->list);
 }
 
 
@@ -44,7 +46,7 @@ page_t* cached_call(lru_cache_t* cache, const char* key, page_t* (*get_page_slow
             hashtable_delete_entry(cache->htable, del_page->key);
             delete_page(del_page);
         }
-        list_node_t* new_node = list_push_front(cache->list, page);
+        list_node_t* new_node = list_push_front(cache->list, copy_page(page));
         hashtable_put(cache->htable, key, new_node);
     } else {
         page = copy_page(list_node_get_page(node));

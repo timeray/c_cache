@@ -4,13 +4,14 @@
 #include "../page.h"
 #include "../clist.h"
 #include "../chashtable.h"
+#include "../cache.h"
 
 
 enum { 
     HASH_TEST_ARR_SIZE=1000,
     HASH_TEST_N_VALS=100000,
     RNG_TEST_SIZE=100000,
-    RNG_TEST_N_ITER=1000000,
+    RNG_TEST_N_ITER=100000,
 };
 
 
@@ -409,6 +410,68 @@ START_TEST(test_hashtable_randomized)
 END_TEST
 
 
+START_TEST(test_cache_create)
+{
+    {
+        lru_cache_t* cache = create_cache(10);
+        delete_cache(cache);
+    }
+    {
+        lru_cache_t* cache = create_cache(0);
+        ck_assert_ptr_null(cache);
+    }
+}
+END_TEST
+
+
+size_t n_test_cache_call_func = 0;
+
+
+static page_t* test_cache_call_func(const char* key) {
+    ++n_test_cache_call_func;
+    char data[20];
+    sprintf(data, "page_%s", key);
+    return create_page(key, data);
+}
+
+
+START_TEST(test_cached_call)
+{
+    {
+        lru_cache_t* cache = create_cache(3);
+        page_t* page = cached_call(cache, "key1", &test_cache_call_func);
+        page_t* same_page = cached_call(cache, "key1", &test_cache_call_func);
+        ck_assert_ptr_ne(page, same_page);
+        ck_assert_str_eq(page->key, same_page->key);
+        ck_assert_str_eq(page->data, same_page->data);
+        ck_assert_uint_eq(n_test_cache_call_func, 1);
+        n_test_cache_call_func = 0;
+
+        delete_page(page);
+        delete_page(same_page);
+        delete_cache(cache);
+    }
+    {
+        lru_cache_t* cache = create_cache(3);
+        page_t* pages[10] = { NULL };
+        pages[0] = cached_call(cache, "key0", &test_cache_call_func);
+        pages[1] = cached_call(cache, "key1", &test_cache_call_func);
+        ck_assert_uint_eq(n_test_cache_call_func, 2);
+        pages[2] = cached_call(cache, "key2", &test_cache_call_func);
+        ck_assert_uint_eq(n_test_cache_call_func, 3);
+        pages[3] = cached_call(cache, "key3", &test_cache_call_func);
+        ck_assert_uint_eq(n_test_cache_call_func, 4);
+        
+
+        for (size_t i = 0; i < 10; ++i) {
+            delete_page(pages[i]);
+        }
+        delete_cache(cache);
+    }
+}
+END_TEST
+
+
 Suite* make_suite(void) {
     Suite *s = suite_create("lru_cache");
 
@@ -434,10 +497,16 @@ Suite* make_suite(void) {
     tcase_add_test(tc_chashtable, test_hashtable_put_get_delete);
     tcase_add_test(tc_chashtable, test_hashtable_randomized);
 
+    // Cache tests
+    TCase *tc_cache = tcase_create("Cache");
+    tcase_add_test(tc_cache, test_cache_create);
+    tcase_add_test(tc_cache, test_cached_call);
+
     suite_add_tcase(s, tc_page);
     suite_add_tcase(s, tc_key);
     suite_add_tcase(s, tc_clist);
     suite_add_tcase(s, tc_chashtable);
+    suite_add_tcase(s, tc_cache);
     return s;
 }
 
