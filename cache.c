@@ -35,7 +35,7 @@ void delete_cache(lru_cache_t* cache) {
 }
 
 
-page_t* cached_call(lru_cache_t* cache, const char* key, page_t* (*get_page_slow)(const char*)) {
+const page_t* cached_call(lru_cache_t* cache, const char* key, page_t* (*get_page_slow)(const char*)) {
     list_node_t* node = hashtable_get(cache->htable, key);
     page_t* page;
     if (node == NULL) {
@@ -46,12 +46,17 @@ page_t* cached_call(lru_cache_t* cache, const char* key, page_t* (*get_page_slow
             hashtable_delete_entry(cache->htable, del_page->key);
             delete_page(del_page);
         }
-        list_node_t* new_node = list_push_front(cache->list, copy_page(page));
+        list_node_t* new_node = list_push_front(cache->list, page);
         hashtable_put(cache->htable, key, new_node);
     } else {
-        page = copy_page(list_node_get_page(node));
+        page = list_node_get_page(node);
         list_move_upfront(cache->list, node);
     }
     return page;
     
+}
+
+
+size_t cache_length(const lru_cache_t* cache) {
+    return list_length(cache->list);
 }

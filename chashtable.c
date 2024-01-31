@@ -193,8 +193,6 @@ static void rehash(hashtable_t* htable) {
             new_n_buckets = htable->n_buckets / 2;
         }
         
-        printf("REHASH, n_entries = %zu, old_n_buckets = %zu, new_n_buckets = %zu\n", htable->n_entries, htable->n_buckets, new_n_buckets);
-
         hashtable_entry_t** old_table = htable->table;
         size_t old_n_buckets = htable->n_buckets;
         htable->table = malloc(sizeof(hashtable_entry_t*) * new_n_buckets);

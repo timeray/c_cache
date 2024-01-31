@@ -11,8 +11,16 @@ enum {
     HASH_TEST_ARR_SIZE=1000,
     HASH_TEST_N_VALS=100000,
     RNG_TEST_SIZE=100000,
-    RNG_TEST_N_ITER=100000,
+    RNG_TEST_N_ITER=1000000,  // list + hashtable
+
+    // Changing cache sizes breaks second randomized test
+    RNG_TEST_CACHE_N_ITER=2000000,
+    RNG_TEST_CACHE_SIZE=10,
+    RNG_TEST_CACHE_N_PAGES=20,
 };
+// These are derived from analytical solution for lru cache
+#define RNG_TEST_CACHE2_P1 0.32  // only valid for CACHE_SIZE = 10, N_PAGES = 20
+#define RNG_TEST_CACHE2_P2 0.68  // only valid for CACHE_SIZE = 10, N_PAGES = 20
 
 
 START_TEST(test_page)
@@ -74,7 +82,6 @@ START_TEST(test_hash)
     float mean = calc_mean(freqs, HASH_TEST_ARR_SIZE);
     float expected_mean = (float)HASH_TEST_N_VALS / HASH_TEST_ARR_SIZE;
     ck_assert_float_eq_tol(mean, expected_mean, 0.1);
-    printf("String hash stat test: mean = %f (expected %f)\n", mean, expected_mean);
 }
 END_TEST
 
@@ -396,8 +403,6 @@ START_TEST(test_hashtable_randomized)
             if (del_res) ++count_successful_dels;
         }
     }
-    printf("n_iter = %zu, n_put = %zu, n_get = %zu, n_del = %zu (n successful dels = %zu)\n",
-           n_iter, count_puts, count_gets, count_dels, count_successful_dels);
 
     for (size_t i = 0; i < n; ++i) {
         free(keys[i]);
@@ -439,35 +444,158 @@ START_TEST(test_cached_call)
 {
     {
         lru_cache_t* cache = create_cache(3);
-        page_t* page = cached_call(cache, "key1", &test_cache_call_func);
-        page_t* same_page = cached_call(cache, "key1", &test_cache_call_func);
-        ck_assert_ptr_ne(page, same_page);
+        const page_t* page = cached_call(cache, "key1", &test_cache_call_func);
+        const page_t* same_page = cached_call(cache, "key1", &test_cache_call_func);
+        ck_assert_ptr_eq(page, same_page);
         ck_assert_str_eq(page->key, same_page->key);
         ck_assert_str_eq(page->data, same_page->data);
         ck_assert_uint_eq(n_test_cache_call_func, 1);
         n_test_cache_call_func = 0;
 
-        delete_page(page);
-        delete_page(same_page);
         delete_cache(cache);
     }
     {
         lru_cache_t* cache = create_cache(3);
-        page_t* pages[10] = { NULL };
-        pages[0] = cached_call(cache, "key0", &test_cache_call_func);
-        pages[1] = cached_call(cache, "key1", &test_cache_call_func);
-        ck_assert_uint_eq(n_test_cache_call_func, 2);
-        pages[2] = cached_call(cache, "key2", &test_cache_call_func);
-        ck_assert_uint_eq(n_test_cache_call_func, 3);
-        pages[3] = cached_call(cache, "key3", &test_cache_call_func);
-        ck_assert_uint_eq(n_test_cache_call_func, 4);
-        
+        const page_t* page;
 
-        for (size_t i = 0; i < 10; ++i) {
-            delete_page(pages[i]);
-        }
+        cached_call(cache, "key0", &test_cache_call_func);
+        cached_call(cache, "key1", &test_cache_call_func);
+        ck_assert_uint_eq(n_test_cache_call_func, 2);
+
+        cached_call(cache, "key2", &test_cache_call_func);
+        ck_assert_uint_eq(n_test_cache_call_func, 3);
+
+        cached_call(cache, "key3", &test_cache_call_func);
+        ck_assert_uint_eq(n_test_cache_call_func, 4);
+        ck_assert_uint_eq(cache_length(cache), 3);
+
+        page = cached_call(cache, "key2", &test_cache_call_func);
+        ck_assert_uint_eq(n_test_cache_call_func, 4);
+        ck_assert_uint_eq(cache_length(cache), 3);
+        ck_assert_str_eq(page->key, "key2");
+        ck_assert_str_eq(page->data, "page_key2");
+        
+        page = cached_call(cache, "key1", &test_cache_call_func);
+        ck_assert_uint_eq(n_test_cache_call_func, 4);
+        ck_assert_uint_eq(cache_length(cache), 3);
+        ck_assert_str_eq(page->key, "key1");
+        ck_assert_str_eq(page->data, "page_key1");
+        
+        page = cached_call(cache, "key0", &test_cache_call_func);
+        ck_assert_uint_eq(n_test_cache_call_func, 5);
+        ck_assert_uint_eq(cache_length(cache), 3);
+        ck_assert_str_eq(page->key, "key0");
+        ck_assert_str_eq(page->data, "page_key0");
+
+        page = cached_call(cache, "key4", &test_cache_call_func);
+        ck_assert_uint_eq(n_test_cache_call_func, 6);
+        ck_assert_uint_eq(cache_length(cache), 3);
+        ck_assert_str_eq(page->key, "key4");
+        ck_assert_str_eq(page->data, "page_key4");
+
+        page = cached_call(cache, "key1", &test_cache_call_func);
+        ck_assert_uint_eq(n_test_cache_call_func, 6);
+        ck_assert_uint_eq(cache_length(cache), 3);
+        ck_assert_str_eq(page->key, "key1");
+        ck_assert_str_eq(page->data, "page_key1");
+
+        page = cached_call(cache, "key0", &test_cache_call_func);
+        ck_assert_uint_eq(n_test_cache_call_func, 6);
+        ck_assert_uint_eq(cache_length(cache), 3);
+        ck_assert_str_eq(page->key, "key0");
+        ck_assert_str_eq(page->data, "page_key0");
+
         delete_cache(cache);
     }
+}
+END_TEST
+
+
+size_t int_call_freqs[RNG_TEST_CACHE_N_PAGES] = {0};
+
+
+static page_t* scoped_get_page(const char* key) {
+    int i;
+    sscanf(&key[3], "%d", &i);
+    ++int_call_freqs[i];
+    return create_page(key, "");
+}
+
+
+static void reset_call_freqs(void) {
+    for (size_t i = 0; i < RNG_TEST_CACHE_N_PAGES; ++i) {
+        int_call_freqs[i] = 0;
+    }
+}
+
+
+// Cache randomized tests are based on estimation of probabilities
+// and comparison with analytical solution via Che's approximation
+//
+// We estimate hit rate - probability that some object m is in the cache
+// m is 1..M, possible objects in cache
+// C is size of cache
+// Then hit rate for m is P(m) = 1 - e^(-L(m) * Tc)
+// where L(m) is rate of appearance of the object
+// then Tc can be found from equation SUM(P(m)) over m = C
+
+START_TEST(test_cache_randomized)
+{
+    // Uniform distribution
+    // In this case, formulas simplifies, cache hit rate is equal to C / M
+    reset_call_freqs();
+    lru_cache_t* cache = create_cache(RNG_TEST_CACHE_SIZE);
+    size_t rand_freqs[RNG_TEST_CACHE_N_PAGES] = {0};
+    for (size_t i = 0; i < RNG_TEST_CACHE_N_ITER; ++i) {
+        int r = rand() % RNG_TEST_CACHE_N_PAGES;
+        ++rand_freqs[r];
+        char key[20];
+        sprintf(key, "key%d", r);
+        cached_call(cache, key, &scoped_get_page);
+    }
+
+    float expected_freq = (float) RNG_TEST_CACHE_SIZE / RNG_TEST_CACHE_N_PAGES;
+    for (size_t i = 0; i < RNG_TEST_CACHE_N_PAGES; ++i) {
+        float freq = (float) int_call_freqs[i] / rand_freqs[i];
+        ck_assert_float_eq_tol(freq, expected_freq, 0.01);
+    }
+
+    delete_cache(cache);
+}
+END_TEST
+
+
+START_TEST(test_cache_randomized2)
+{
+    // Made-up distribution:
+    // M samples are split in halfs of size k
+    // for lower half, with 50% chance roll will be discarded and sample from upper half is picked randomly
+    // then the probability of appearence of sample from lower half is decreased by 50%
+    // p_u for upper half increased by p(1 + k / (2 * (M - k)))
+
+    // Then for fixed M, C and k we can find hit rates (for M = 2k, we need to solve e^(-p1 * t) + e^(-p2 * t) = C numerically)
+    reset_call_freqs();
+    lru_cache_t* cache = create_cache(RNG_TEST_CACHE_SIZE);
+    size_t rand_freqs[RNG_TEST_CACHE_N_PAGES] = {0};
+    for (size_t i = 0; i < RNG_TEST_CACHE_N_ITER; ++i) {
+        int r = rand() % RNG_TEST_CACHE_N_PAGES;
+        if (r >= RNG_TEST_CACHE_N_PAGES / 2) {
+            r = ((rand() % 2) == 0) ? r : rand() % RNG_TEST_CACHE_N_PAGES / 2;
+        }
+
+        ++rand_freqs[r];
+        char key[20];
+        sprintf(key, "key%d", r);
+        cached_call(cache, key, &scoped_get_page);
+    }
+
+    for (size_t i = 0; i < RNG_TEST_CACHE_N_PAGES; ++i) {
+        float freq = (float) int_call_freqs[i] / rand_freqs[i];
+        float expected_freq = i < RNG_TEST_CACHE_N_PAGES / 2 ? RNG_TEST_CACHE2_P1 : RNG_TEST_CACHE2_P2;
+        ck_assert_float_eq_tol(freq, expected_freq, 0.01);
+    }
+
+    delete_cache(cache);
 }
 END_TEST
 
@@ -501,6 +629,8 @@ Suite* make_suite(void) {
     TCase *tc_cache = tcase_create("Cache");
     tcase_add_test(tc_cache, test_cache_create);
     tcase_add_test(tc_cache, test_cached_call);
+    tcase_add_test(tc_cache, test_cache_randomized);
+    tcase_add_test(tc_cache, test_cache_randomized2);
 
     suite_add_tcase(s, tc_page);
     suite_add_tcase(s, tc_key);
