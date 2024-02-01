@@ -27,7 +27,10 @@ bool is_list_empty(const list_t* list) {
 
 list_t* create_list(void) {
     list_t* list_ptr = malloc(sizeof(list_t));
-    if (list_ptr == NULL) { return list_ptr; }
+    if (list_ptr == NULL) {
+        puts("malloc failed");
+        exit(EXIT_FAILURE);
+    }
     list_ptr->head = NULL;
     list_ptr->tail = NULL;
     list_ptr->size = 0;
@@ -46,7 +49,12 @@ void delete_list(list_t* list) {
 
 
 list_node_t* create_list_node(void) {
-    return calloc(1, sizeof(list_node_t));
+    list_node_t* res = calloc(1, sizeof(list_node_t));
+    if (res == NULL) {
+        puts("calloc failed");
+        exit(EXIT_FAILURE);
+    }
+    return res;
 }
 
 

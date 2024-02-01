@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include "cache.h"
 
@@ -16,6 +17,10 @@ lru_cache_t* create_cache(size_t size) {
         return NULL;
     }
     lru_cache_t* cache_ptr = malloc(sizeof(lru_cache_t));
+    if (cache_ptr == NULL) {
+        puts("malloc failed");
+        exit(EXIT_FAILURE);
+    }
     cache_ptr->htable = create_hashtable();
     cache_ptr->list = create_list();
     cache_ptr->max_size = size;

@@ -1,10 +1,15 @@
 #include <page.h>
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 
 page_t* create_page(const char* key, const char* data) {
     page_t* page = malloc(sizeof(page_t));
+    if (page == NULL) {
+        puts("malloc failed");
+        exit(EXIT_FAILURE);
+    }
     page->key = string_dup(key);
     page->data = string_dup(data);
     return page;
@@ -60,6 +65,10 @@ bool key_equal(const char* lhs, const char* rhs) {
 char* string_dup(const char* str) {
     size_t len = strlen(str);
     char* new_key = malloc(len + 1);
+    if (new_key == NULL) {
+        puts("malloc failed");
+        exit(EXIT_FAILURE);
+    }
     strcpy(new_key, str);
     return new_key;
 }

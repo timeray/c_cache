@@ -28,6 +28,10 @@ static hashtable_entry_t* find_entry(const hashtable_t*, const char*);
 
 static hashtable_entry_t* create_hashtable_entry(const char* key, list_node_t* node, hashtable_entry_t* next) {
     hashtable_entry_t* entry = malloc(sizeof(hashtable_entry_t));
+    if (entry == NULL) {
+        puts("malloc failed");
+        exit(EXIT_FAILURE);
+    }
     entry->key = string_dup(key);
     entry->node = node;
     entry->next = next;
@@ -45,6 +49,10 @@ static void delete_hashtable_entry(hashtable_entry_t* entry) {
 
 hashtable_t* create_hashtable(void) {
     hashtable_t* htable = malloc(sizeof(hashtable_t));
+    if (htable == NULL) {
+        puts("malloc failed");
+        exit(EXIT_FAILURE);
+    }
     htable->table = NULL;
     htable->n_buckets = 0;
     htable->n_entries = 0;
@@ -91,6 +99,10 @@ list_node_t* hashtable_get(const hashtable_t* htable, const char* key) {
 void hashtable_put(hashtable_t* htable, const char* key, list_node_t* node) {
     if (htable->n_entries == 0) {
         htable->table = malloc(sizeof(hashtable_entry_t*));
+        if (htable->table == NULL) {
+            puts("malloc failed");
+            exit(EXIT_FAILURE);
+        }
         ++htable->n_buckets;
 
         hashtable_entry_t* entry = create_hashtable_entry(key, node, NULL);
@@ -196,6 +208,10 @@ static void rehash(hashtable_t* htable) {
         hashtable_entry_t** old_table = htable->table;
         size_t old_n_buckets = htable->n_buckets;
         htable->table = malloc(sizeof(hashtable_entry_t*) * new_n_buckets);
+        if (htable->table == NULL) {
+            puts("malloc failure");
+            exit(EXIT_FAILURE);
+        }
         for (size_t i = 0; i < new_n_buckets; ++i) {
             htable->table[i] = NULL;
         }
