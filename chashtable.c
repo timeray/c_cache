@@ -59,7 +59,7 @@ void delete_hashtable(hashtable_t* htable) {
             while(next != NULL) {
                 hashtable_entry_t* entry = next;
                 next = entry->next;
-                free(entry);
+                delete_hashtable_entry(entry);
             }
         }
         free(htable->table);

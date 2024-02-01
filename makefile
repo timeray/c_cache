@@ -1,7 +1,7 @@
 CC=gcc
 INCDIRS=-I.
 LIBDIRS=-L/ucrt64/lib
-LIBINC=-lcheck -lm #-lsubunit
+LIBINC=-lcheck -lm -lsubunit
 OPT=-O2
 CFLAGS=-Wall -std=c11 $(INCDIRS) $(LIBDIRS) $(OPT)
 

@@ -424,6 +424,7 @@ START_TEST(test_cache_create)
     {
         lru_cache_t* cache = create_cache(0);
         ck_assert_ptr_null(cache);
+        delete_cache(cache);
     }
 }
 END_TEST

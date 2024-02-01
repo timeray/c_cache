@@ -7,7 +7,7 @@
 struct lru_cache_t {
     hashtable_t* htable;
     list_t* list;
-    const size_t max_size;
+    size_t max_size;
 };
 
 
@@ -15,9 +15,10 @@ lru_cache_t* create_cache(size_t size) {
     if (size == 0) {
         return NULL;
     }
-    lru_cache_t cache = {.htable=create_hashtable(), .list=create_list(), .max_size=size};
     lru_cache_t* cache_ptr = malloc(sizeof(lru_cache_t));
-    memcpy(cache_ptr, &cache, sizeof(lru_cache_t));
+    cache_ptr->htable = create_hashtable();
+    cache_ptr->list = create_list();
+    cache_ptr->max_size = size;
     return cache_ptr;
 }
 
@@ -32,6 +33,7 @@ void delete_cache(lru_cache_t* cache) {
         }
         delete_list(cache->list);
     }
+    free(cache);
 }
 
 
