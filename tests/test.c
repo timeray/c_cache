@@ -517,7 +517,12 @@ size_t int_call_freqs[RNG_TEST_CACHE_N_PAGES] = {0};
 
 static page_t* scoped_get_page(const char* key) {
     int i;
-    sscanf(&key[3], "%d", &i);
+    int ret = sscanf(&key[3], "%d", &i);
+    if (ret != 1) {
+        puts("sscanf: wrong number of arguments assigned");
+        exit(EXIT_FAILURE);
+    }
+
     ++int_call_freqs[i];
     return create_page(key, "");
 }
