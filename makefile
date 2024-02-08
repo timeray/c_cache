@@ -1,14 +1,21 @@
 TEST_EXEC := test_bin
-BUILD_DIR := ./build
 
-SRCS := page.c list.c hashtable.c cache.c tests/test.c
+BUILD_DIR := ./build
+SRC_DIR := src
+
+SRCS := $(SRC_DIR)/page.c $(SRC_DIR)/list.c $(SRC_DIR)/hashtable.c $(SRC_DIR)/cache.c tests/test.c
+
 OBJS := $(SRCS:%.c=$(BUILD_DIR)/%.o)
 DEPS := $(OBJS:%.o=%.d)
 
-INC_DIRS=-I.
-LIBDIRS=-L/ucrt64/lib
-LDFLAGS=-lcheck -lm #-lsubunit
-CFLAGS=-Wall -std=c11 -O2 $(INC_DIRS) $(LIBDIRS) -MMD -MP
+INC_DIRS=-I$(SRC_DIR)
+LDFLAGS=-lcheck -lm
+
+ifneq ($(OS),Windows_NT)
+    LDFLAGS += -lsubunit
+endif
+
+CFLAGS=-Wall -std=c11 -O2 $(INC_DIRS) -MMD -MP
 
 
 all: $(BUILD_DIR)/$(TEST_EXEC)
