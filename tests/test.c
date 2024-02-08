@@ -1,10 +1,10 @@
 #include <check.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include "../page.h"
-#include "../clist.h"
-#include "../chashtable.h"
-#include "../cache.h"
+#include "page.h"
+#include "list.h"
+#include "hashtable.h"
+#include "cache.h"
 
 
 enum { 

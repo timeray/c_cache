@@ -1,7 +1,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "chashtable.h"
+#include "hashtable.h"
 
 
 #define MAX_LOAD_FACTOR 1

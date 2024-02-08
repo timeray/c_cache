@@ -1,27 +1,38 @@
-CC=gcc
-INCDIRS=-I.
+TEST_EXEC := test_bin
+BUILD_DIR := ./build
+
+SRCS := page.c list.c hashtable.c cache.c tests/test.c
+OBJS := $(SRCS:%.c=$(BUILD_DIR)/%.o)
+DEPS := $(OBJS:%.o=%.d)
+
+INC_DIRS=-I.
 LIBDIRS=-L/ucrt64/lib
-LIBINC=-lcheck -lm -lsubunit
-OPT=-O2
-CFLAGS=-Wall -std=c11 $(INCDIRS) $(LIBDIRS) $(OPT)
+LDFLAGS=-lcheck -lm #-lsubunit
+CFLAGS=-Wall -std=c11 -O2 $(INC_DIRS) $(LIBDIRS) -MMD -MP
 
-CFILES=page.c clist.c chashtable.c cache.c tests/test.c
-OBJECTS=page.o clist.o chashtable.o cache.o tests/test.o
 
-BINARY_TEST=test_bin
+all: $(BUILD_DIR)/$(TEST_EXEC)
 
-# Rules
-# First rule will be executed when make is called
-all: $(BINARY_TEST)
 
-# $@ - ref to lefthand side, $^ - ref to righthand side
-$(BINARY_TEST): $(OBJECTS)
-	$(CC) -o $@ $^ $(LIBINC)
+$(BUILD_DIR)/$(TEST_EXEC): $(OBJS)
+	$(CC) $(OBJS) -o $@ $(LDFLAGS)
 
-# % - wildcard
-%.o: %.c
-	$(CC) $(CFLAGS) -c -o $@ $^
+
+$(BUILD_DIR)/%.o: %.c
+	mkdir -p $(dir $@)
+	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
+
+
+.PHONY: all, test, check, clean
+test check:
+	$(BUILD_DIR)/$(TEST_EXEC)
 
 
 clean:
-	rm -rf $(OBJECTS) $(BINARY_TEST)
+	rm -rf $(BUILD_DIR)
+
+
+# Include the .d makefiles. The - at the front suppresses the errors of missing
+# Makefiles. Initially, all the .d files will be missing, and we don't want those
+# errors to show up.
+-include $(DEPS)

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <clist.h>
+#include <list.h>
 #include <page.h>
 
 typedef struct hashtable_t hashtable_t;
@@ -16,3 +16,4 @@ void hashtable_put(hashtable_t*, const char*, list_node_t*);
 bool hashtable_delete_entry(hashtable_t*, const char*);
 
 void hashtable_print(const hashtable_t*);
+

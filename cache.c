@@ -3,6 +3,8 @@
 #include <stdio.h>
 
 #include "cache.h"
+#include "list.h"
+#include "hashtable.h"
 
 
 struct lru_cache_t {
